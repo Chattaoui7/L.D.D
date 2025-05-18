@@ -1,109 +1,93 @@
-print("starting")
-from sklearn.datasets import load_files
-from keras.utils import to_categorical
-import numpy as np
-from glob import glob
-import cv2
-import numpy as np
+print("Starting...")
 
-from keras.preprocessing import image
+import os
+import numpy as np
+import random
 from tqdm import tqdm
+from glob import glob
+from keras.utils import to_categorical
+from keras.preprocessing import image
+from sklearn.datasets import load_files
 
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, Flatten, Dense
+import tensorflow as tf
 
-training_path = r'C:\Users\admin\Desktop\Leaf-Disease-Detection\data\sunflower\training'
-testing_path = r'C:\Users\admin\Desktop\Leaf-Disease-Detection\data\sunflower\testing'
-# In[2]:
-print("done import")
-# define function to load train, test, and validation datasets
+# Paths
+training_path = r'C:\Users\admin\Desktop\L.D.D\data\badam\testing'
+testing_path = r'C:\Users\admin\Desktop\L.D.D\data\badam\training'
+save_dir = r'C:\Users\admin\Desktop\L.D.D\codes\cnn\savedModels'
+
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
+print("Done importing")
+
+# Load dataset
 def load_dataset(path):
     data = load_files(path)
-    dog_files = np.array(data['filenames'])
-    dog_targets = to_categorical(np.array(data['target']), 3)
-    return dog_files, dog_targets
+    files = np.array(data['filenames'])
+    targets = to_categorical(np.array(data['target']), 3)  # 3 classes
+    return files, targets
 
-# In[3]:
-print("starting load data")
-# load train, test, and validation datasets
+print("Loading data...")
+
 train_files, train_targets = load_dataset(training_path)
 test_files, test_targets = load_dataset(testing_path)
-print("done load data")
-import random
+
+print("Done loading data")
+
 random.seed(9)
 
-
 def path_to_tensor(img_path):
-    # loads RGB image as PIL.Image.Image type
     try:
-        img = image.load_img(img_path, target_size=(64,64))
-    # convert PIL.Image.Image type to 3D tensor with shape (224, 224, 3)
-    except IOError:
-        pass
-    x = image.img_to_array(img)
-    # convert 3D tensor to 4D tensor with shape (1, 224, 224, 3) and return 4D tensor
-    return np.expand_dims(x, axis=0)
+        img = image.load_img(img_path, target_size=(64, 64))
+        x = image.img_to_array(img)
+        return np.expand_dims(x, axis=0)
+    except:
+        return np.zeros((1, 64, 64, 3))
 
 def paths_to_tensor(img_paths):
-    list_of_tensors = [path_to_tensor(img_path) for img_path in tqdm(img_paths)]
-    return np.vstack(list_of_tensors)
+    tensors = [path_to_tensor(img_path) for img_path in tqdm(img_paths)]
+    return np.vstack(tensors)
 
-# pre-process the data for Keras
-train_tensors = paths_to_tensor(train_files).astype('float32')/255
-test_tensors = paths_to_tensor(test_files).astype('float32')/255
+# Preprocessing
+print("Preprocessing data...")
+train_tensors = paths_to_tensor(train_files).astype('float32') / 255
+test_tensors = paths_to_tensor(test_files).astype('float32') / 255
 
-
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
-from keras.layers import Dropout, Flatten, Dense
-from keras.models import Sequential
-
-
+# Model
 model = Sequential()
-
-model.add(Conv2D(filters=32,kernel_size=(3,3),strides=(1,1),input_shape=(64,64,3),activation='relu'))
+model.add(Conv2D(32, (3,3), activation='relu', input_shape=(64,64,3)))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2,2)))
 
-model.add(Conv2D(filters=64,kernel_size=(3,3),strides=(1,1),activation='relu'))
+model.add(Conv2D(64, (3,3), activation='relu'))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2,2)))
-
 
 model.add(Flatten())
-model.add(Dense(512,activation='relu'))
-
+model.add(Dense(512, activation='relu'))
 model.add(BatchNormalization())
-model.add(Dense(3,activation='softmax'))
-
+model.add(Dense(3, activation='softmax'))  # 3 classes
 
 model.summary()
 
-
-# ### Compile the Model
-
-# In[20]:
-
+# Compile and Train
 model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# ### (IMPLEMENTATION) Train the Model
-#
-# Train your model in the code cell below.  Use model checkpointing to save the model that attains the best validation loss.
-#
-# You are welcome to [augment the training data](https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html), but this is not a requirement.
+print("Training...")
+model.fit(train_tensors, train_targets, epochs=4, batch_size=64,
+          validation_data=(test_tensors, test_targets), verbose=1)
 
-# In[21]:
+# Evaluate
+loss, acc = model.evaluate(test_tensors, test_targets)
+print('Test Loss:', loss)
+print('Test Accuracy:', acc)
 
-from keras.callbacks import ModelCheckpoint
+# === Save models ===
 
-### TODO: specify the number of epochs that you would like to use to train the model.
-
-epochs = 4
-
-### Do NOT modify the code below this line.
-
-checkpointer = ModelCheckpoint(filepath=r'C:\Users\admin\Desktop\Leaf-Disease-Detection\codes\cnn\weights.best.from_scratch.hdf5',
-                               verbose=1, save_best_only=True)
-
-model.fit(train_tensors, train_targets,epochs=epochs, batch_size=64,  validation_data=(test_tensors, test_targets), callbacks=[checkpointer], verbose=1)
-#
-score=model.evaluate(test_tensors,test_targets)
-print('test loss:',score[0])
-print('test accuracy:',score[1])
+# Save as .keras
+keras_model_path = os.path.join(save_dir, "leaf_badam_model.keras")
+model.save(keras_model_path)
+print(f"✅ Keras model saved at: {keras_model_path}")

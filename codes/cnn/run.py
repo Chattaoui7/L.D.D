@@ -21,10 +21,10 @@ model.add(BatchNormalization())
 model.add(Dense(3,activation='softmax'))
 
 # Load the trained weights
-model.load_weights(r'C:\Users\admin\Desktop\Leaf-Disease-Detection\codes\cnn\weights.best.from_scratch.hdf5')
+model.load_weights(r'C:\Users\admin\Desktop\L.D.D\codes\cnn\savedModels\leaf_model.keras')
 
 # Class labels — replace with your actual class names
-class_names = ['blight', 'mildew', 'rust']
+class_names = ['good', 'bad']
 
 def preprocess_frame(frame):
     # Resize frame to 64x64 like in training
