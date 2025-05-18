@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 #Load .keras or .h5
-model = tf.keras.models.load_model(r"C:\Users\admin\Desktop\L.D.D\codes\cnn\savedModels\leaf_badam_model.keras")
+model = tf.keras.models.load_model(r"C:\Users\admin\Desktop\L.D.D\codes\cnn\savedModels\leaf_badam_model.h5")
 
 # Convert to TFLite
 converter = tf.lite.TFLiteConverter.from_keras_model(model)

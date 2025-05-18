@@ -88,6 +88,6 @@ print('Test Accuracy:', acc)
 # === Save models ===
 
 # Save as .keras
-keras_model_path = os.path.join(save_dir, "leaf_badam_model.keras")
+keras_model_path = os.path.join(save_dir, "leaf_badam_model.h5")
 model.save(keras_model_path)
 print(f"✅ Keras model saved at: {keras_model_path}")
